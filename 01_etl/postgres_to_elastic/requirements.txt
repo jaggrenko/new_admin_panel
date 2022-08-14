@@ -1,0 +1,8 @@
+psycopg2-binary==2.9.3
+elasticsearch<=7
+redis<=4.3.4
+pydantic==1.9.1
+backoff==2.1.2
+python-dotenv
+configparser==5.2.0
+flake8

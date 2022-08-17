@@ -1,18 +1,14 @@
-import sqlite3
-import psycopg2
-
-import elasticsearch
-from elasticsearch import Elasticsearch
-
-import redis
-from redis import Redis
-
 import backoff
 import logging
-
+import sqlite3
 from abc import ABC
 from contextlib import contextmanager
-from typing import Literal, Union
+from typing import Union
+
+import psycopg2
+from elasticsearch import Elasticsearch, ElasticsearchException
+from redis import exceptions as rs_exceptions, Redis
+
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +60,7 @@ class _PGConnector(_DBConnector):
 class _ESConnector(_DBConnector):
 
     @contextmanager
-    @backoff.on_exception(backoff.expo, elasticsearch.ElasticsearchException,
+    @backoff.on_exception(backoff.expo, ElasticsearchException,
                           logger=logger, max_tries=30)
     def __call__(self, **dsl):
         try:
@@ -73,7 +69,7 @@ class _ESConnector(_DBConnector):
                                       dsl.get('port', '9200'))]
             _connection = Elasticsearch(connection_url)
 
-        except (elasticsearch.ElasticsearchException) as err:
+        except (ElasticsearchException) as err:
             logger.error('ES error occurred: {0} {1}'
                          .format(err, self.__class__.__name__)
                          )
@@ -86,13 +82,13 @@ class _ESConnector(_DBConnector):
 class _RedisConnector(_DBConnector):
 
     @contextmanager
-    @backoff.on_exception(backoff.expo, redis.exceptions,
+    @backoff.on_exception(backoff.expo, rs_exceptions,
                           logger=logger, max_tries=30)
     def __call__(self, **dsl):
         try:
             _connection = Redis(**dsl)
 
-        except redis.exceptions as err:
+        except rs_exceptions as err:
             logger.error('Redis error occurred: {0} {1}'
                          .format(err, self.__class__.__name__)
                          )
@@ -103,6 +99,7 @@ class _RedisConnector(_DBConnector):
 
 
 class ConnectorFactory():
+
     CONNECTIONS = {
         'sql': _SQLiteConnector,
         'pg': _PGConnector,

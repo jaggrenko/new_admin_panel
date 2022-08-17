@@ -1,8 +1,6 @@
-import typing
-
 from abc import ABC
-from typing import List, Optional, Any
 from pydantic import BaseModel, StrictStr, StrictFloat, UUID4, validator
+from typing import Iterable, List, Optional
 
 
 class AbstractValidator(ABC):
@@ -14,19 +12,27 @@ class ModelValidator(AbstractValidator, BaseModel):
 
 
 class GenresElastic(ModelValidator):
+    """pg input parser model for genres table."""
+
     name: StrictStr
 
 
 class PersonInFilm(ModelValidator):
+    """pg input parser model for person table."""
+
     name: StrictStr
 
 
 class PersonInFilmByID(ModelValidator):
+    """pg input parser for custom person aggregation."""
+
     id: UUID4
     name: StrictStr
 
 
 class MoviesPG(ModelValidator):
+    """pg main parser preparing data for further validation."""
+
     id: UUID4
     imdb_rating: Optional[StrictFloat]
     genre: Optional[List[GenresElastic]]
@@ -39,7 +45,9 @@ class MoviesPG(ModelValidator):
     writers: Optional[List[PersonInFilmByID]]
 
     @validator('actors_names', 'writers_names', 'director', 'genre')
-    def unpack_field_data(cls, data_packed: typing.Iterable):
+    def unpack_field_data(cls, data_packed: Iterable):
+        """transform raw data for es field format."""
+
         if data_packed:
-            return [item.name for item in data_packed]
+            return [data_to_transform.name for data_to_transform in data_packed]
         return []

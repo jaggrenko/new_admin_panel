@@ -47,6 +47,7 @@ services:
 
   data_migrate:
     build: ./postgres_to_elastic/.
+    container_name: etl
     env_file:
       - .env
     command: >
